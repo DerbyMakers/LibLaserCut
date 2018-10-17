@@ -61,6 +61,8 @@ public class Layer
   private double ysim = 0.0;
   private double max_x = 0.0;
   private double max_y = 0.0;
+  private Boolean mirrorAxisX = false;
+  private Boolean mirrorAxisY = true;
 
   /**
    * create new Layer
@@ -80,11 +82,23 @@ public class Layer
 //    if (this.number >= 0) {
       this.vectors = new ByteArrayOutputStream();
 //    }
+    moveAbs(0.0, 0.0);	// try fix https://github.com/fablabnbg/VisiCut/issues/38
   }
   public void setNumber(int number)
   {
     this.number = number;
   }
+  
+  public void setMirrorAxisX(Boolean mirrorAxisX)
+  {
+    this.mirrorAxisX = mirrorAxisX;
+  }
+  
+  public void setMirrorAxisY(Boolean mirrorAxisY)
+  {
+    this.mirrorAxisY = mirrorAxisY;
+  }
+  
   /**
    * check if this layer has any movement
    */
@@ -214,14 +228,36 @@ public class Layer
      * Top_Left_E7_50 0.0mm 0.0mm                      e7 50 00 00 00 00 00 00 00 00 00 00 
      * Bottom_Right_E7_51 52.0mm 53.0mm                e7 51 00 00 03 16 20 00 00 03 1e 08 
      */
-    byte[] res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E703"), Lib.absValueToByteArray(top_left_x));
-    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(top_left_y)));
-    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E707"), Lib.absValueToByteArray(max_x));
-    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(max_y)));
-    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E750"), Lib.absValueToByteArray(top_left_x));
-    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(top_left_y)));
-    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E751"), Lib.absValueToByteArray(max_x));
-    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(max_y)));
+    double bounding_top_left_x;
+    double bounding_top_left_y;
+    double bounding_bottom_right_x;
+    double bounding_bottom_right_y;
+    /* odd looking logic due to code being written originally for ThunderLaser
+     * which has different mirroring on x and y axes */
+    if (mirrorAxisX) {
+      bounding_top_left_x = max_x;
+      bounding_bottom_right_x = top_left_x;
+    }
+    else {
+      bounding_top_left_x = top_left_x;
+      bounding_bottom_right_x = max_x;
+    }
+    if (mirrorAxisY) {
+      bounding_top_left_y = top_left_y;
+      bounding_bottom_right_y = max_y;
+    }
+    else {
+      bounding_top_left_y = max_y;
+      bounding_bottom_right_y = top_left_y;
+    }
+    byte[] res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E703"), Lib.absValueToByteArray(bounding_top_left_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_top_left_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E707"), Lib.absValueToByteArray(bounding_bottom_right_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_bottom_right_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E750"), Lib.absValueToByteArray(bounding_top_left_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_top_left_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E751"), Lib.absValueToByteArray(bounding_bottom_right_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_bottom_right_y)));
     writeHex(data, "e7040001000100000000000000000000");
     writeHex(data, "e70500");
     out.write(data.toByteArray());
@@ -239,7 +275,23 @@ public class Layer
     laserPower(1, min_power, max_power);
     layerColor();
     layerCa41();
-    dimensions(top_left_x, top_left_y, bottom_right_x, bottom_right_y);
+    if (this.mirrorAxisX) {
+      if (this.mirrorAxisY) {
+        dimensions(bottom_right_x, top_left_y, top_left_x, bottom_right_y);
+      }
+      else {
+        dimensions(bottom_right_x, bottom_right_y, top_left_x, top_left_y);
+      }
+    }
+    else {
+      if (this.mirrorAxisY) {
+        dimensions(top_left_x, top_left_y, bottom_right_x, bottom_right_y);
+      }
+      else {
+        dimensions(top_left_x, bottom_right_y, bottom_right_x, top_left_y);
+      }
+    }
+    //dimensions(top_left_x, top_left_y, bottom_right_x, bottom_right_y);
     out.write(data.toByteArray()); data.reset();
   }
 

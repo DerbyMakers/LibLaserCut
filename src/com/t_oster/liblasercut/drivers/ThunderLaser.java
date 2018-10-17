@@ -65,6 +65,8 @@ public class ThunderLaser extends LaserCutter
   protected static final String SETTING_BED_HEIGHT = "Bed height (mm)";
   protected static final String SETTING_RASTER_WHITESPACE = "Additional space per Raster line (mm)";
   protected static final String SETTING_USE_BIDIRECTIONAL_RASTERING = "Use bidirectional rastering";
+  protected static final String SETTING_MIRROR_AXIS_X = "Mirror X axis";
+  protected static final String SETTING_MIRROR_AXIS_Y = "Mirror Y axis";
   // config values
   private static final long[] JogAcceleration = {200000,50000,600000};
   private static final long[] JogMaxVelocity = {16,16,2048};
@@ -122,6 +124,56 @@ public class ThunderLaser extends LaserCutter
     return true;
   }
 
+  /**
+   * Depending on the configuration of the cutter it may need an axis to be
+   * mirrored for the job to cut as intended.
+   * Logic is chosen for consistency with RDWorks, and defaults to match
+   * ThunderLaser's implementation.
+   */
+  protected boolean mirrorAxisX = false;
+  
+  /**
+   * Get the value of mirrorAxisX
+   * 
+   * @return the value of mirrorAxisX
+   */
+  public boolean getMirrorAxisX()
+  {
+    return mirrorAxisX;
+  }
+  
+  /**
+   * Set the value of mirrorAxisX
+   * 
+   * @param mirrorAxisX new value of mirrorAxisX
+   */
+  public void setMirrorAxisX(boolean mirrorAxisX)
+  {
+    this.mirrorAxisX = mirrorAxisX;
+  }
+  
+  protected boolean mirrorAxisY = true;
+  
+  /**
+   * Get the value of mirrorAxisY
+   * 
+   * @return the value of mirrorAxisY
+   */
+  public boolean getMirrorAxisY()
+  {
+    return mirrorAxisY;
+  }
+  
+  /**
+   * Set the value of mirrorAxisY
+   * 
+   * @param mirrorAxisY new value of mirrorAxisY
+   */
+  public void setMirrorAxisY(boolean mirrorAxisY)
+  {
+    this.mirrorAxisY = mirrorAxisY;
+  }
+  
   /**
    * When rastering, whether to always cut from left to right, or to cut in both
    * directions? (i.e. use the return stroke to raster as well)
@@ -352,6 +404,8 @@ public class ThunderLaser extends LaserCutter
     job.applyStartPoint();
 
     ruida.setName(job.getTitle());
+    ruida.setMirrorAxisX(this.mirrorAxisX);
+    ruida.setMirrorAxisY(this.mirrorAxisY);
 
     for (JobPart p : job.getParts())
     {
@@ -904,7 +958,9 @@ public class ThunderLaser extends LaserCutter
     SETTING_BED_WIDTH,
     SETTING_BED_HEIGHT,
     SETTING_USE_BIDIRECTIONAL_RASTERING,
-    SETTING_RASTER_WHITESPACE
+    SETTING_RASTER_WHITESPACE,
+    SETTING_MIRROR_AXIS_X,
+    SETTING_MIRROR_AXIS_Y
   };
 
   @Override
@@ -950,6 +1006,12 @@ public class ThunderLaser extends LaserCutter
     }
     else if (SETTING_RASTER_WHITESPACE.equals(attribute)) {
       return this.getAddSpacePerRasterLine();
+    }
+    else if (SETTING_MIRROR_AXIS_X.equals(attribute)) {
+      return this.getMirrorAxisX();
+    }
+    else if (SETTING_MIRROR_AXIS_Y.equals(attribute)) {
+      return this.getMirrorAxisY();
     }
     return null;
   }
@@ -1002,6 +1064,12 @@ public class ThunderLaser extends LaserCutter
     }
     else if (SETTING_RASTER_WHITESPACE.equals(attribute)) {
       this.setAddSpacePerRasterLine((Double) value);
+    }
+    else if (SETTING_MIRROR_AXIS_X.equals(attribute)) {
+      this.setMirrorAxisX((Boolean) value);
+    }
+    else if (SETTING_MIRROR_AXIS_Y.equals(attribute)) {
+      this.setMirrorAxisY((Boolean) value);
     }
   }
 

@@ -66,6 +66,8 @@ public class Ruida
   public static final int NETWORK_TIMEOUT = 3000;
   public static final int SOURCE_PORT = 40200; // used by rdworks in Windows
   private String name;
+  private Boolean mirrorAxisX = false;
+  private Boolean mirrorAxisY = true;
   /* overall bounding dimensions */
   private double boundingWidth = 0.0;
   private double boundingHeight = 0.0;
@@ -93,6 +95,16 @@ public class Ruida
     this.name = name;
   }
 
+  public void setMirrorAxisX(Boolean mirrorAxisX)
+  {
+    this.mirrorAxisX = mirrorAxisX;
+  }
+  
+  public void setMirrorAxisY(Boolean mirrorAxisY)
+  {
+    this.mirrorAxisY = mirrorAxisY;
+  }
+  
   /**
    * open file output connection
    * @sets out
@@ -216,6 +228,8 @@ public class Ruida
 
     layer = new Layer(number);
     layer.setDimensions(top_left_x, top_left_y, top_left_x+width, top_left_y+height);
+    layer.setMirrorAxisX(this.mirrorAxisX);
+    layer.setMirrorAxisY(this.mirrorAxisY);
     if (number > 0) {
       // 'random' color
       layer.setRGB(red[number%8], green[number%8], blue[number%8]);
