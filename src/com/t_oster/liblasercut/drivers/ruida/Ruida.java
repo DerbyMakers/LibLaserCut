@@ -185,6 +185,9 @@ public class Ruida
       }
     }
     layerCount(layers_with_vectors - 2);
+    /* mirroring setup using bounding box? */
+    layer = layers.get(this.boundingLayer);
+    layer.writeMirroringBoxTo(out);
     /* layer definitions */
     for (int i = 0; i < layers.size(); i++)
     {

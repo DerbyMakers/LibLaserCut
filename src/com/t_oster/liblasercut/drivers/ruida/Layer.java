@@ -265,6 +265,100 @@ public class Layer
   }
 
   /**
+   * write layer as bounding box to out
+   *
+   */
+  public void writeMirroringBoxTo(OutputStream out) throws IOException
+  {
+    /**
+     * Mirroring appears to be controlled by a pair of paired commands,
+     * one with corners reordered with mirroring as per bounding box, 
+     * and the other with corners static irrespective of mirroring.
+     * Not clear how much of the preamble is necessary - including to begin with
+     * 
+     * Pen_Draw_Y Layer:0 0.0mm                        e7 54 00 00 00 00 00 00 
+     * Pen_Draw_Y Layer:1 0.0mm                        e7 54 01 00 00 00 00 00 
+     * Laser_Y_Offset Layer:0 0.0mm                    e7 55 00 00 00 00 00 00 
+     * Laser_Y_Offset Layer:1 0.0mm                    e7 55 01 00 00 00 00 00 
+     * Laser2_Offset 0.0mm 0.0mm                       f1 03 00 00 00 00 00 00 00 00 00 00 
+     * Start0 00                                       f1 00 00 
+     * Start1 00                                       f1 01 00 
+     * F2 00 00                                        f2 00 00 
+     * F2 01 00                                        f2 01 00 
+     * F2 02 05 2a 39 1c 41 04 6a 15 08 20             f2 02 05 2a 39 1c 41 04 6a 15 08 20 
+     * F2 03 0.0mm 0.0mm                               f2 03 00 00 00 00 00 00 00 00 00 00 
+     * Bottom_Right_F2_04 350.689mm 350.468mm          f2 04 00 00 15 33 61 00 00 15 32 04 
+     * F2 06 0.0mm 0.0mm                               f2 06 00 00 00 00 00 00 00 00 00 00 
+     * F2 07 00                                        f2 07 00 
+     * Bottom_Right_F2_05 00 01 00 01 350.689mm 350.468mmf2 05 00 01 00 01 00 00 15 33 61 00 00 15 32 04 
+     * EA 00                                           ea 00 
+     * E7 60 00                                        e7 60 00 
+     * E7 13 0.0mm 0.0mm                               e7 13 00 00 00 00 00 00 00 00 00 00 
+     * Bottom_Right_E7_17 350.689mm 350.468mm          e7 17 00 00 15 33 61 00 00 15 32 04 
+     * E7 23 0.0mm 0.0mm                               e7 23 00 00 00 00 00 00 00 00 00 00 
+     * E7 24 00                                        e7 24 00 
+     * Bottom_Right_E7_08 00 01 00 01 350.689mm 350.468mme7 08 00 01 00 01 00 00 15 33 61 00 00 15 32 04 
+     * 
+     */
+    double bounding_top_left_x;
+    double bounding_top_left_y;
+    double bounding_bottom_right_x;
+    double bounding_bottom_right_y;
+    /* odd looking logic due to code being written originally for ThunderLaser
+     * which has different mirroring on x and y axes */
+    if (mirrorAxisX) {
+      bounding_top_left_x = max_x;
+      bounding_bottom_right_x = top_left_x;
+    }
+    else {
+      bounding_top_left_x = top_left_x;
+      bounding_bottom_right_x = max_x;
+    }
+    if (mirrorAxisY) {
+      bounding_top_left_y = top_left_y;
+      bounding_bottom_right_y = max_y;
+    }
+    else {
+      bounding_top_left_y = max_y;
+      bounding_bottom_right_y = top_left_y;
+    }
+    /* preamble - includes zeroed pen draws and offsets */
+    writeHex(data, "e754000000000000");
+    writeHex(data, "e754010000000000");
+    writeHex(data, "e755000000000000");
+    writeHex(data, "e755010000000000");
+    writeHex(data, "f10300000000000000000000");
+    writeHex(data, "f10000");
+    writeHex(data, "f10100");
+    writeHex(data, "f20000");
+    writeHex(data, "f20100");
+    writeHex(data, "f202052a391c41046a150820");
+    /* bit with corners */
+    byte[] res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("F203"), Lib.absValueToByteArray(bounding_top_left_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_top_left_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("F204"), Lib.absValueToByteArray(bounding_bottom_right_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_bottom_right_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("F206"), Lib.absValueToByteArray(top_left_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(top_left_y)));
+    writeHex(data, "f20700");
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("F20500010001"), Lib.absValueToByteArray(max_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(max_y)));
+    writeHex(data, "ea00");
+    writeHex(data, "e76000");
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E713"), Lib.absValueToByteArray(bounding_top_left_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_top_left_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E717"), Lib.absValueToByteArray(bounding_bottom_right_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(bounding_bottom_right_y)));
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E723"), Lib.absValueToByteArray(top_left_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(top_left_y)));
+    writeHex(data, "e72400");
+    res = (byte[])ArrayUtils.addAll(Lib.hexStringToByteArray("E70800010001"), Lib.absValueToByteArray(max_x));
+    write(data, (byte[])ArrayUtils.addAll(res, Lib.absValueToByteArray(max_y)));
+    out.write(data.toByteArray());
+    data.reset();
+  }
+
+  /**
    * write data as layer to out
    *
    */
